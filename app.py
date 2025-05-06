@@ -8,8 +8,7 @@ from lime.lime_tabular import LimeTabularExplainer
 # Model imports
 from sklearn.ensemble import VotingClassifier, RandomForestClassifier
 from xgboost import XGBClassifier
-from lightgbm import LGBMClassifier
-from sklearn.svm import SVC
+
 
 # Load model and supporting files
 voting_model = joblib.load('voting_model.pkl')
@@ -99,3 +98,4 @@ if st.button("Predict Crop"):
         reasoning_text = ", ".join(reasoning_parts) + "." if reasoning_parts else ""
         if reasoning_text:
             st.markdown(f"🧠 {reasoning_text}")
+
