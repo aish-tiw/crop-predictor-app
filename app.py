@@ -8,18 +8,21 @@ from lime.lime_tabular import LimeTabularExplainer
 # Model imports
 from sklearn.ensemble import VotingClassifier, RandomForestClassifier
 from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+from sklearn.svm import SVC
 
-# Load model and data
+# Load model and supporting files
 voting_model = joblib.load('voting_model.pkl')
 label_encoder = joblib.load('label_encoder.pkl')
 X_train = joblib.load('X_train.pkl')
-X = joblib.load('X.pkl')  # For column names and feature means
+X = joblib.load('X.pkl')
+scaler = joblib.load('scaler.pkl')  # ✅ Load the saved StandardScaler
 
 # Setup
 feature_names = X.columns.tolist()
 feature_means = X.mean()
 
-# Realistic value ranges (adjust as needed)
+# Value ranges for input fields
 valid_ranges = {
     'N': (0, 140),
     'P': (5, 145),
@@ -30,12 +33,11 @@ valid_ranges = {
     'rainfall': (10, 300)
 }
 
-# App title
+# App title and instructions
 st.title("🌾 Crop Recommendation System")
+st.subheader("📥 Enter Soil and Weather Conditions")
 
-st.subheader("📥 Enter Soil & Weather Features")
-
-# User input fields
+# Manual user input form
 user_input = []
 for feature in feature_names:
     default = float(round(feature_means[feature], 2))
@@ -49,10 +51,11 @@ for feature in feature_names:
     )
     user_input.append(value)
 
-# Predict
+# Prediction on button click
 if st.button("Predict Crop"):
     input_array = np.array([user_input])
-    probs = voting_model.predict_proba(input_array)[0]
+    input_scaled = scaler.transform(input_array)  # ✅ Apply same scaling as during training
+    probs = voting_model.predict_proba(input_scaled)[0]
     top3_indices = np.argsort(probs)[::-1][:3]
 
     st.subheader("✅ Top-3 Recommended Crops")
@@ -71,13 +74,13 @@ if st.button("Predict Crop"):
         )
 
         explanation = explainer.explain_instance(
-            data_row=input_array[0],
+            data_row=input_scaled[0],
             predict_fn=voting_model.predict_proba,
             labels=[idx],
             num_features=7
         )
 
-        # Smaller chart
+        # Show smaller bar chart
         fig = explanation.as_pyplot_figure(label=idx)
         fig.set_size_inches(4, 2.5)
         st.pyplot(fig)
@@ -96,7 +99,3 @@ if st.button("Predict Crop"):
         reasoning_text = ", ".join(reasoning_parts) + "." if reasoning_parts else ""
         if reasoning_text:
             st.markdown(f"🧠 {reasoning_text}")
-
-
-
-
